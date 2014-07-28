@@ -4,6 +4,7 @@ Created on July 27th
 @author: wronk
 
 Functions to compute points for offense, kickers, and defense based on stats
+Point values based on ESPN standard scoring system guide
 """
 
 
@@ -51,6 +52,10 @@ def points_parse_kick(made=None, missed=None, PAT=0, twoPtConv=0):
         List of made kicks in yards
     missed : list
         List of missed kicks in yards
+    PAT : int
+        Number of point-after-touchdown kicks made
+    twoPtConv : int
+        Number of 2-pt conversions passed, ran, or caught
 
     Returns
     -------
@@ -86,6 +91,18 @@ def points_parse_def(ptsAgainst=0, TD=0, INT=0, fumbleRecovery=0,
     ----------
     ptsAgainst : int
         Number of points scored by opposing team (includes all points)
+    TD : int
+        Number of touchdowns scored
+    INT : int
+        Number of interceptions made
+    fumbleRecovery : int
+        Number of fumbles recovered
+    blockedKick : int
+        Number of field goals, punts, or PATs blocked
+    safety : int
+        Number of safeties
+    sack : int
+        Number of sacks
 
     Returns
     -------
