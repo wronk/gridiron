@@ -8,11 +8,10 @@ Point values based on ESPN standard scoring system guide
 """
 
 
-def point_parse_off(rushOrRecieveTD=0, kickoffOrPuntTD=0, fumbleTD=0,
-                    passingTD=0, rushOrRecieve2PtConv=0, passing2PtConv=0,
-                    ydsRushingOrRecieving=0, ydsPassing=0,
-                    rushOrRecieveTD40Plus=0, passingTD40Plus=0,
-                    INT=0, fumbleLost=0):
+def point_parse_off(passing_yds=0, passing_tds=0, passing_int=0, rushing_yds=0,
+		    rushing_tds=0, receiving_tds=0, receiving_yds=0,
+		     receiving_twoptm=0,
+ 		    rushing_twoptm=0, fumbles_lost=0, fumbles_rec_tds=0):
     """Compute points for offensive events
 
     Parameters
@@ -28,34 +27,36 @@ def point_parse_off(rushOrRecieveTD=0, kickoffOrPuntTD=0, fumbleTD=0,
 
     # Could alternatively put this in text/excel file and load it
     pts = (
-        06 * rushOrRecieveTD +
-        06 * kickoffOrPuntTD +
-        06 * fumbleTD +
-        04 * passingTD +
-        02 * rushOrRecieve2PtConv +
-        02 * passing2PtConv +
-        01 * ydsRushingOrRecieving % 10 +
-        01 * ydsPassing % 25 +
-        02 * rushOrRecieveTD40Plus +
-        02 * passingTD40Plus +
-        -2 * INT +
-        -2 * fumbleLost)
+        01 * (passing_yds % 25) +
+        04 * passing_tds +
+        -1 * passing_int +
+        01 * (rushing_yds % 10) +
+        06 * rushing_tds +
+	01 * (receiving_yds % 10) +
+        06 * receiving_tds +
+        02 * (receiving_twoptm + rushing_twoptm)
+        -2 * fumbles_lost +
+        06 * fumbles_rec_tds)
+
+    if passing_yds >= 300:
+	pts += 2
+    if rushing_yds >= 100:
+	pts += 3
+    if passing_yds >= 100:
+	pts += 2
+
     return pts
 
 
-def points_parse_kick(made=None, missed=None, PAT=0, twoPtConv=0):
+def points_parse_kick(kicking_fgm_yds=None, kicking_xpmade=0):
     """Compute points for kicking events
 
     Parameters
     ----------
     made : list
         List of made kicks in yards
-    missed : list
-        List of missed kicks in yards
     PAT : int
         Number of point-after-touchdown kicks made
-    twoPtConv : int
-        Number of 2-pt conversions passed, ran, or caught
 
     Returns
     -------
@@ -71,59 +72,56 @@ def points_parse_kick(made=None, missed=None, PAT=0, twoPtConv=0):
         else:
             pts += 5
 
+    '''
     for kick in missed:
         if kick < 40:
             pts += -2
         else:
             pts += -1
+    '''
 
     pts += 1 * PAT
-    pts += 2 * twoPtConv
 
     return pts
 
 
-def points_parse_def(ptsAgainst=0, TD=0, INT=0, fumbleRecovery=0,
-                     blockedKick=0, safety=0, sack=0):
-    """Compute points for defensive events
-
+def points_parse_def(defense_sk=0, defense_int=0, defense_frec=0,
+		     defense_frec_tds=0, defense_int_tds=0,
+		     defense_misc_tds=0, defense_safe=0, defense_fgblk=0,
+		     defense_puntblk=0, kickret_tds=0, pntret_tds=0,
+		     pts_against=0)
+    """
     Parameters
     ----------
-    ptsAgainst : int
+    pts_against : int
         Number of points scored by opposing team (includes all points)
-    TD : int
-        Number of touchdowns scored
-    INT : int
-        Number of interceptions made
-    fumbleRecovery : int
-        Number of fumbles recovered
-    blockedKick : int
-        Number of field goals, punts, or PATs blocked
-    safety : int
-        Number of safeties
-    sack : int
-        Number of sacks
+    defense_int : int
+        Number of defensive interceptions 
+    defense_frec : int
+        Number of fumble recoveries
 
+    #TODO: finish up rest of doc
     Returns
     -------
     pts : int
         Number of points scored by defensive squad
     """
     # Check that points against has a reasonable value
-    if ptsAgainst < 0 or ptsAgainst > 70:
+    if pts_against < 0 or pts_against > 70:
         raise ValueError('Points against not between 0-70')
 
     pts = (
-        3 * TD +
-        2 * INT +
-        2 * fumbleRecovery +
-        2 * blockedKick +
-        2 * safety +
-        1 * sack)
+        01 * defense_sk +
+        02 * defense_int +
+	02 * defense_frec +
+        06 * (defense_frec_tds + defense_int_tds + defense_misc_tds)
+        02 * defense_safe +
+        02 * (defense_fgblk + defense_puntblk) +
+        06 * (kickret_tds + pntret_tds))
 
     # point divisions for points scored against
-    ptDivs = [2, 7, 14, 18, 22, 28, 35, 46]
-    ptDivAllot = [10, 7, 4, 1, 0, -1, -4, -7, -10]
+    ptDivs = [2, 7, 14, 21, 28, 35]
+    ptDivAllot = [10, 7, 4, 1, 0, -1, -4]
 
     # Compute FF points for defense/special teams points scored against
     if ptsAgainst == 0:
@@ -138,27 +136,7 @@ def points_parse_def(ptsAgainst=0, TD=0, INT=0, fumbleRecovery=0,
         pts += ptDivAllot[4]
     elif ptsAgainst >= ptDivs[4] and ptsAgainst < ptDivs[5]:
         pts += ptDivAllot[5]
-    elif ptsAgainst >= ptDivs[5] and ptsAgainst < ptDivs[6]:
+    elif ptsAgainst >= ptDivs[5]:
         pts += ptDivAllot[6]
-    elif ptsAgainst >= ptDivs[6] and ptsAgainst < ptDivs[7]:
-        pts += ptDivAllot[7]
-    elif ptsAgainst >= ptDivs[7]:
-        pts += ptDivAllot[8]
 
     return pts
-
-    '''
-    ptsOff = [(6, 'Rush/Recieve TD'),
-            (6, 'Return kick/punt TD'),
-            (6, 'Return/recover for TD'),
-            (4, 'Passing TD'),
-            (2, 'Rush/recieve 2-pt conv.')
-            (2, 'Passing 2-pt conv.'),
-            (1, 'Pts/10 yds rush/recieve'),
-            (1, 'Pts/25 yds passing'),
-            (02, 'Rush/recieve TD of 40+ yds'),
-            (02, 'Passing TD of 40+ yds'),
-            (-2, 'Pass intercepted'),
-            (-2, 'Fumble lost'),
-            (05, '50+)
-            '''
